@@ -1,7 +1,7 @@
 var Calculadora = (function () {
     var CONST_OPERACIONES_ID = ["dividido", "por", "menos", "mas"];
     var regexNumbers = /^\d+$/;
-    var numA = 0, equalActive = false, resultado = 0, operacion = "", concatOperation = false;
+    var numA = 0, equalActive = false, resultado = 0, operacion = "", concatOperation = false, operadorTemp = 0;
     /**
      * Metodo para inicializar los eventos de la calculadora
      */
@@ -46,28 +46,32 @@ var Calculadora = (function () {
                 display.innerHTML = (display.innerHTML != "0" ? display.innerHTML : "") + tecla.id;
             }
         } else if (CONST_OPERACIONES_ID.indexOf(tecla.id) !== -1 && display.innerHTML.length <= 8){
-            operacion = tecla.id;
-            if (!(!!numA)) {
+            if (!(!!numA) || !!operadorTemp) {
                 numA = resultado;
                 resultado = 0;
                 display.innerHTML = "";
             } else {
                 if (display.innerHTML == "" || display.innerHTML == "0") {
-                    resultado = executeOperation(numA, numA, operacion);
+                    resultado = executeOperation(numA, numA, !!operacion ? operacion : tecla.id);
                 } else if (!!display.innerHTML && display.innerHTML != "0") {
-                    resultado = executeOperation(numA, parseFloat(display.innerHTML), operacion);
+                    resultado = executeOperation(numA, parseFloat(display.innerHTML), !!operacion ? operacion : tecla.id);
                     concatOperation = true;
                 }
                 display.innerHTML = String(resultado);
             }
+            operacion = tecla.id;
+            operadorTemp = 0;
         } else if (tecla.id === "igual" && !!operacion && display.innerHTML.length <= 8) {
             equalActive = true;
-            if (numA == 0 && !!display.innerHTML && display.innerHTML != "0") {
-                resultado = executeOperation(parseFloat(display.innerHTML), parseFloat(display.innerHTML), operacion);
-            } else if (!!numA) {
-                resultado = executeOperation(numA, parseFloat(display.innerHTML), operacion);
-                numA = 0;
+            var numB = 0;
+            if (!!operadorTemp) {
+                numB = operadorTemp;
+                numA = parseFloat(display.innerHTML);
+            } else {
+                numB = parseFloat(display.innerHTML);
             }
+            resultado = executeOperation(numA, numB, operacion);
+            operadorTemp = !(!!operadorTemp) ? parseFloat(display.innerHTML) : operadorTemp;
             display.innerHTML = String(resultado);
         }
         tecla.classList.add("active");
@@ -106,8 +110,8 @@ var Calculadora = (function () {
                 result = (!!numB ? (numA / numB) : 0);
             break;
         }
-        console.log("numA: " + numA + " " + operacion + " numB: " + numB + " = " + result);
-        return result <= 99999999 ? result : 0;
+        console.log("numA: " + numA + " " + operation + " numB: " + numB + " = " + result);
+        return result <= 99999999 ? Math.round(result * 100) / 100 : 0;
     }
     /**
      * Metodo para dejar en condiciones iniciales la calculadora
@@ -117,6 +121,7 @@ var Calculadora = (function () {
         document.getElementById("display").innerHTML = "0";
         equalActive = false;
         operacion = "";
+        operadorTemp = 0;
     }
 
     return {
